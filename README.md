@@ -1,2 +1,2 @@
 To run app
-bash'npm start'
+bash`npm start`
