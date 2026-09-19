@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Practical Report Builder</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <h1>Practical Report Builder</h1>
+    <p class="subtitle">Drop in your practical list PDF and screenshots — everything below is auto-detected where possible. Anything that can't be detected is left for you to fill in manually.</p>
+
+    <section class="card">
+      <h2>1. Practical list PDF</h2>
+      <p class="hint">Upload the PDF with your list of practicals. Aims are extracted automatically, and the practical number range below is auto-filled from the lowest/highest numbers found (you can still override it).</p>
+      <input type="file" id="pdfInput" accept="application/pdf" />
+      <div id="pdfStatus" class="status"></div>
+      <div id="aimsPreview" class="aims-preview"></div>
+    </section>
+
+    <section class="card">
+      <h2>2. Your details</h2>
+      <div class="row">
+        <label>
+          Name
+          <input type="text" id="name" placeholder="e.g. Shamit Patel" />
+        </label>
+        <label>
+          Class / Batch <span class="optional">(manual)</span>
+          <input type="text" id="batch" placeholder="e.g. D2D" />
+        </label>
+        <label>
+          Enrollment No. <span class="optional">(manual)</span>
+          <input type="text" id="enrollment" placeholder="e.g. 230123456789" />
+        </label>
+      </div>
+      <div class="row">
+        <label>
+          Practical number range <span class="optional" id="rangeAutoTag"></span>
+          <div class="range-row">
+            <input type="number" id="rangeStart" placeholder="From" min="1" />
+            <span>to</span>
+            <input type="number" id="rangeEnd" placeholder="To" min="1" />
+          </div>
+        </label>
+        <label>
+          Screenshots per practical <span class="optional" id="perPracticalAutoTag"></span>
+          <div class="range-row">
+            <input type="number" id="perPractical" value="2" min="1" max="10" style="width:70px" />
+            <label class="inline-check">
+              <input type="checkbox" id="firstIsCode" checked />
+              1st = code, rest = Output
+            </label>
+          </div>
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3. Dump all screenshots</h2>
+      <p class="hint">Select, drag-and-drop, or paste (Ctrl+V) ALL your screenshots at once, in order (code, output, code, output, ...). They're auto-assigned across your practical range below, and screenshots-per-practical is auto-detected once the range is known. Drag a thumbnail to reorder, or click × to remove one.</p>
+      <div id="bulkDropzone" class="dropzone big" tabindex="0">Click, drag & drop, or paste (Ctrl+V) all screenshots here</div>
+      <div id="thumbGrid" class="thumb-grid"></div>
+    </section>
+
+    <section class="card">
+      <button id="generateBtn" type="button" class="primary">Generate Word Document</button>
+      <div id="generateStatus" class="status"></div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
