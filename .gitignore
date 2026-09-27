@@ -1,0 +1,4 @@
+ml/cache/
+public/vendor/
+public/model/
+public/sw.js

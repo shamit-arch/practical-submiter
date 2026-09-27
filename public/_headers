@@ -1,0 +1,10 @@
+# Cloudflare Pages response headers (ignored by the local server).
+# The service worker and model must be re-checked on every visit so deploys take effect.
+/sw.js
+  Cache-Control: no-cache
+/model/*
+  Cache-Control: no-cache
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer

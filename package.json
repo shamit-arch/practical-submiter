@@ -1,21 +1,25 @@
 {
   "name": "practical-report-app",
   "version": "1.0.0",
-  "description": "",
+  "description": "Practical-file builder: an in-browser model sorts screenshots into source code vs output and builds a formatted Word document. Static site (Cloudflare Pages) or local.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "node scripts/build.js",
+    "start": "node scripts/build.js && node server.js",
+    "train": "node ml/train.js",
+    "test": "node --test test/*.test.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@napi-rs/canvas": "^0.1.80",
     "docx": "^9.7.1",
     "express": "^5.2.1",
-    "image-size": "^2.0.4",
-    "multer": "^2.4.0",
-    "pdf-parse": "^2.4.5"
+    "pdfjs-dist": "^5.4.296"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
