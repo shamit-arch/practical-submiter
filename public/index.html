@@ -5,78 +5,213 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="description" content="Sort lab-practical screenshots into source code and output with an in-browser model and build a formatted Word practical file." />
 <title>Practical Report Builder</title>
+<script>
+  // Apply the saved theme before first paint (see lib/theme.js).
+  try { var t = localStorage.getItem("prb.theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="wrap">
-    <h1>Practical Report Builder</h1>
-    <p class="subtitle">Dump all your screenshots at once. A local AI model labels each one as <b>source code</b> or <b>output</b>, groups them into practicals, and builds a formatted Word file. Everything runs in your browser — nothing is uploaded, and it keeps working offline.</p>
-
-    <section class="card model-card" id="modelCard">
-      <div class="model-row">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+        </span>
         <div>
-          <div class="model-title">Offline model <span id="modelName" class="pill"></span></div>
-          <div class="hint" id="modelStats">Loading model…</div>
-        </div>
-        <div class="model-actions">
-          <button type="button" id="resetModelBtn" class="secondary hidden" title="Forget corrections saved in this browser">Reset</button>
-          <button type="button" id="retrainBtn" class="secondary" title="Retrain using the labels you corrected">Retrain model</button>
+          <div class="brand-name">Practical <span class="long">Report </span>Builder</div>
+          <div class="brand-sub">Runs in your browser · nothing is uploaded</div>
         </div>
       </div>
-      <div id="retrainStatus" class="status"></div>
-    </section>
-
-    <section class="card">
-      <h2>1. Practical list PDF <span class="optional">(optional)</span></h2>
-      <p class="hint">Upload the PDF listing your practicals. Aims are extracted automatically and the practical range below is filled in from it.</p>
-      <input type="file" id="pdfInput" accept="application/pdf" />
-      <div id="pdfStatus" class="status"></div>
-    </section>
-
-    <section class="card">
-      <h2>2. Your details</h2>
-      <div class="row">
-        <label>Name <input type="text" id="name" placeholder="e.g. Shamit Patel" /></label>
-        <label>Class / Batch <input type="text" id="batch" placeholder="e.g. D2D" /></label>
-        <label>Enrollment No. <input type="text" id="enrollment" placeholder="e.g. 230123456789" /></label>
+      <div class="topbar-actions">
+        <span id="summary" class="summary"></span>
+        <button type="button" id="modelBtn" class="chip" title="Offline model details">
+          <span id="modelDot" class="dot loading"></span><span class="chip-label" id="modelChip">Loading model…</span>
+        </button>
+        <button type="button" id="shortcutsBtn" class="icon-btn ghost" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
+        </button>
+        <button type="button" id="themeBtn" class="icon-btn ghost" data-mode="auto">
+          <svg class="ti ti-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg>
+          <svg class="ti ti-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          <svg class="ti ti-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button type="button" id="generateBtn" class="primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          <span id="generateLabel">Generate<span class="long"> .docx</span></span>
+        </button>
       </div>
-      <div class="row">
-        <label>Subject <span class="optional">(page header)</span> <input type="text" id="subject" placeholder="e.g. Data Structures (3130702)" /></label>
-        <label>Institute <span class="optional">(cover page)</span> <input type="text" id="institute" placeholder="e.g. Government Engineering College" /></label>
-      </div>
-      <div class="row">
-        <label>
-          Practical number range <span class="optional" id="rangeAutoTag"></span>
-          <div class="range-row">
-            <input type="number" id="rangeStart" placeholder="From" min="1" />
-            <span>to</span>
-            <input type="number" id="rangeEnd" placeholder="To" min="1" />
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <details id="detailsPanel" class="panel" open>
+        <summary>
+          Report details <span class="panel-sub" id="detailsSub"></span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="panel-body">
+          <label class="file-drop" id="pdfDrop">
+            <input type="file" id="pdfInput" accept="application/pdf" hidden />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6M9 15l3 3 3-3"/></svg>
+            <div>
+              <div class="fd-title" id="pdfTitle">Practical list PDF <span class="fd-sub">(optional)</span></div>
+              <div class="fd-sub">Fills in the aims and practical range</div>
+            </div>
+          </label>
+          <div id="pdfStatus" class="status"></div>
+
+          <div class="section-label">You</div>
+          <label class="field">
+            <span>Name <span class="req" aria-hidden="true">*</span></span>
+            <input type="text" id="name" placeholder="e.g. Shamit Patel" autocomplete="name" />
+          </label>
+          <div class="field-row">
+            <label class="field"><span>Class / Batch</span><input type="text" id="batch" placeholder="e.g. D2D" /></label>
+            <label class="field"><span>Enrollment No.</span><input type="text" id="enrollment" placeholder="e.g. 230123456789" inputmode="numeric" /></label>
           </div>
-        </label>
-      </div>
-    </section>
+          <label class="field"><span>Subject <span class="opt">· page header</span></span><input type="text" id="subject" placeholder="e.g. Data Structures (3130702)" /></label>
+          <label class="field"><span>Institute <span class="opt">· cover page</span></span><input type="text" id="institute" placeholder="e.g. Government Engineering College" /></label>
 
-    <section class="card">
-      <h2>3. Dump all screenshots</h2>
-      <p class="hint">Select, drag &amp; drop, or paste (Ctrl+V) every screenshot in order. Each gets a <span class="tag code">CODE</span> or <span class="tag output">OUTPUT</span> label with the model's confidence — click the label to flip it. A new practical starts wherever code follows output; use <b>⤒</b> to force or undo a split. Drag thumbnails to reorder.</p>
-      <div id="bulkDropzone" class="dropzone big" tabindex="0">Click, drag &amp; drop, or paste (Ctrl+V) all screenshots here</div>
-      <div id="classifyStatus" class="status"></div>
-      <div id="groupWarning" class="warning hidden"></div>
-      <div id="thumbGrid" class="thumb-grid"></div>
-    </section>
+          <div class="section-label">Practicals</div>
+          <div class="field">
+            <span>Number range <span class="auto-tag" id="rangeAutoTag"></span></span>
+            <div class="range-row">
+              <input type="number" id="rangeStart" placeholder="From" min="1" aria-label="First practical number" />
+              <span>to</span>
+              <input type="number" id="rangeEnd" placeholder="To" min="1" aria-label="Last practical number" />
+            </div>
+          </div>
 
-    <section class="card">
-      <h2>4. Generate</h2>
-      <div class="checks">
-        <label class="inline-check"><input type="checkbox" id="includeIndex" checked /> Cover page with index table</label>
-        <label class="inline-check"><input type="checkbox" id="newPagePerPractical" checked /> Start each practical on a new page</label>
-        <label class="inline-check"><input type="checkbox" id="captions" /> Figure captions under screenshots</label>
+          <div class="section-label">Layout</div>
+          <label class="switch"><input type="checkbox" id="includeIndex" checked /> Cover page with index table</label>
+          <label class="switch"><input type="checkbox" id="newPagePerPractical" checked /> Each practical on a new page</label>
+          <label class="switch"><input type="checkbox" id="captions" /> Figure captions under screenshots</label>
+        </div>
+      </details>
+    </aside>
+
+    <section class="workspace" aria-label="Screenshots">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <h2>Screenshots</h2>
+          <span id="classifyStatus" class="status"></span>
+        </div>
+        <div class="toolbar-right">
+          <button type="button" id="reviewBtn" class="small hidden"></button>
+          <button type="button" id="reviewAllBtn" class="small hidden" title="Step through every screenshot full-screen (Enter)">Review all</button>
+          <button type="button" id="addBtn" class="small hidden">+ Add screenshots</button>
+        </div>
       </div>
-      <button id="generateBtn" type="button" class="primary">Generate Word Document</button>
-      <div id="generateStatus" class="status"></div>
+      <div id="groupWarning" class="banner warning hidden"></div>
+
+      <div id="emptyState" class="dropzone" tabindex="0" role="button" aria-label="Add screenshots">
+        <div class="dz-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+        </div>
+        <h3>Drop all your screenshots here</h3>
+        <p>In order, all at once. Or click to browse, or paste with <kbd>Ctrl</kbd> + <kbd>V</kbd>.</p>
+        <div class="steps">
+          <div><b>1</b> Drop screenshots</div>
+          <div><b>2</b> Fix anything marked <span style="color:var(--warn);font-weight:700">Check</span></div>
+          <div><b>3</b> Generate</div>
+        </div>
+      </div>
+
+      <div id="board" class="board"></div>
     </section>
+  </main>
+
+  <div id="bulkBar" class="bulk-bar hidden" role="toolbar" aria-label="Selected screenshots">
+    <span class="count" id="bulkCount"></span>
+    <button type="button" class="small b-code" data-bulk="code" title="Mark selected as source code (C)">Code</button>
+    <button type="button" class="small b-output" data-bulk="output" title="Mark selected as output (O)">Output</button>
+    <button type="button" class="small" data-bulk="split" title="Start a new practical at each selected screenshot (S)">New practical</button>
+    <button type="button" class="small" data-bulk="merge" title="Put the selected screenshots in one practical">Merge</button>
+    <button type="button" class="small danger" data-bulk="remove" title="Remove selected (Delete)">Remove</button>
+    <button type="button" class="small ghost" data-bulk="clear" title="Clear selection (Esc)" aria-label="Clear selection">✕</button>
   </div>
 
+  <div id="dropOverlay" class="drop-overlay hidden">
+    <div>Drop to add<small>Screenshots are added to the end · a PDF becomes the practical list</small></div>
+  </div>
+
+  <div id="viewer" class="viewer hidden" role="dialog" aria-modal="true" aria-label="Screenshot review">
+    <div class="viewer-top">
+      <div class="viewer-info">
+        <b id="viewerPos"></b>
+        <span class="viewer-pill" id="viewerGroup"></span>
+        <span class="viewer-pill" id="viewerConf"></span>
+      </div>
+      <button type="button" id="viewerClose" class="small">Close <kbd>Esc</kbd></button>
+    </div>
+    <div class="viewer-stage">
+      <button type="button" class="viewer-nav prev" id="viewerPrev" aria-label="Previous (←)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <img id="viewerImg" alt="" />
+      <button type="button" class="viewer-nav next" id="viewerNext" aria-label="Next (→)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div class="viewer-bottom">
+      <div class="seg big" id="viewerSeg">
+        <button type="button" class="code" data-kind="code">Code <kbd>C</kbd></button>
+        <button type="button" class="output" data-kind="output">Output <kbd>O</kbd></button>
+      </div>
+      <button type="button" id="viewerSplit">New practical starts here <kbd>S</kbd></button>
+      <button type="button" id="viewerRemove">Remove <kbd>Del</kbd></button>
+      <div class="viewer-hint">Pressing <kbd>C</kbd> or <kbd>O</kbd> saves the label and moves to the next screenshot · <kbd>←</kbd> <kbd>→</kbd> to browse</div>
+    </div>
+  </div>
+
+  <dialog id="modelDialog" aria-labelledby="modelDialogTitle">
+    <div class="dialog-head">
+      <h2 id="modelDialogTitle">Offline model <span id="modelName" class="p-meta"></span></h2>
+      <button type="button" class="icon-btn ghost" data-close aria-label="Close">✕</button>
+    </div>
+    <div class="dialog-body">
+      <div class="stat-grid" id="modelStatGrid"></div>
+      <p id="modelStats">Loading model…</p>
+      <p>Labels you correct are saved as training examples when you generate. Retrain to teach the model your screenshots — it stays in this browser only.</p>
+      <div id="retrainStatus" class="status"></div>
+      <div class="dialog-actions">
+        <button type="button" id="resetModelBtn" class="danger hidden" title="Forget corrections saved in this browser">Reset</button>
+        <button type="button" id="retrainBtn" class="primary" title="Retrain using the labels you corrected">Retrain model</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="shortcutsDialog" aria-labelledby="shortcutsTitle">
+    <div class="dialog-head">
+      <h2 id="shortcutsTitle">Keyboard shortcuts</h2>
+      <button type="button" class="icon-btn ghost" data-close aria-label="Close">✕</button>
+    </div>
+    <div class="dialog-body">
+      <table class="keys">
+        <tr class="grp"><td colspan="2">Screenshots</td></tr>
+        <tr><td><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></td><td>Move between screenshots (hold <kbd>Shift</kbd> to select)</td></tr>
+        <tr><td><kbd>C</kbd> / <kbd>O</kbd></td><td>Mark as source code / output</td></tr>
+        <tr><td><kbd>Space</kbd></td><td>Flip the label</td></tr>
+        <tr><td><kbd>S</kbd></td><td>Start a new practical here (press again to undo)</td></tr>
+        <tr><td><kbd>M</kbd></td><td>Merge this practical with the previous one</td></tr>
+        <tr><td><kbd>Del</kbd></td><td>Remove</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>Open full-screen review</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>A</kbd></td><td>Select all · click with <kbd>Ctrl</kbd> or <kbd>Shift</kbd> to select several</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Clear selection</td></tr>
+        <tr class="grp"><td colspan="2">Anywhere</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>V</kbd></td><td>Paste screenshots</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>Z</kbd></td><td>Undo · <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd> or <kbd>Ctrl</kbd> + <kbd>Y</kbd> to redo</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>Enter</kbd></td><td>Generate the Word document</td></tr>
+        <tr><td><kbd>?</kbd></td><td>Show this list</td></tr>
+      </table>
+    </div>
+  </dialog>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="lib/theme.js"></script>
   <script src="lib/features.js"></script>
   <script src="lib/mlp.js"></script>
   <script src="lib/jev.js"></script>

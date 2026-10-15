@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!--
+  Sign-in page — NOT IN USE YET. Nothing links here and the app does not require sign-in.
+  Kept for a future version; see lib/auth.js for how to wire it up.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>Sign in · Practical Report Builder</title>
+<script>
+  // Apply the saved theme before first paint (see lib/theme.js).
+  try { var t = localStorage.getItem("prb.theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <button type="button" id="themeBtn" class="icon-btn ghost auth-theme" data-mode="auto">
+    <svg class="ti ti-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg>
+    <svg class="ti ti-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    <svg class="ti ti-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+
+  <main class="auth-page">
+    <div class="auth-card">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+      </span>
+      <div>
+        <h1>Sign in</h1>
+        <p class="lead">to Practical Report Builder</p>
+      </div>
+
+      <div id="authError" class="auth-error hidden" role="alert"></div>
+
+      <form id="loginForm" novalidate>
+        <label class="field">
+          <span>Email</span>
+          <input type="email" id="email" autocomplete="username" placeholder="you@college.edu" required />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <span class="pw">
+            <input type="password" id="password" autocomplete="current-password" required />
+            <button type="button" id="togglePw" class="ghost" aria-controls="password">Show</button>
+          </span>
+        </label>
+        <label class="switch"><input type="checkbox" id="remember" checked /> Keep me signed in on this device</label>
+        <button type="submit" class="primary submit" id="submitBtn">Sign in</button>
+      </form>
+
+      <p class="auth-foot">Accounts are created by the administrator. Ask them if you need access or a new password.</p>
+    </div>
+  </main>
+
+  <script src="lib/theme.js"></script>
+  <script src="lib/auth.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>
